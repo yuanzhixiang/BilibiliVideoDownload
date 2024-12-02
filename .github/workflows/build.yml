@@ -55,8 +55,7 @@ jobs:
       - name: Build mac app
         if: matrix.os == 'macos-latest'
         run: |
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" && brew install python@2 && ln -s /usr/local/bin/python2 /usr/local/bin/python
-
+          curl https://pyenv.run | bash && exec $SHELL && pyenv install 2.7.18 && pyenv global 2.7.18 && ln -s $(pyenv which python) /usr/local/bin/python
           npm run electron:build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
