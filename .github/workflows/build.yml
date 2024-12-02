@@ -55,7 +55,8 @@ jobs:
       - name: Build mac app
         if: matrix.os == 'macos-latest'
         run: |
-          curl https://pyenv.run | bash && exec $SHELL && pyenv install 2.7.18 && pyenv global 2.7.18 && ln -s $(pyenv which python) /usr/local/bin/python
+          curl https://pyenv.run | bash && export PATH="$HOME/.pyenv/bin:$PATH" && eval "$(pyenv init --path)" && eval "$(pyenv init -)" && eval "$(pyenv virtualenv-init -)" && pyenv install 2.7.18 && pyenv global 2.7.18 && ln -s $(pyenv which python) /usr/local/bin/python
+
           npm run electron:build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
