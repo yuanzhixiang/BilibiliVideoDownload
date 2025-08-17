@@ -65,7 +65,7 @@ ipcMain.handle('open-dir-dialog', () => {
   if (filePaths) {
     return Promise.resolve(filePaths[0])
   } else {
-    return Promise.reject('not select')
+    return Promise.reject(new Error('not select'))
   }
 })
 
@@ -141,7 +141,7 @@ ipcMain.on('delete-store', (event, path) => {
 
 // 创建右键菜单
 ipcMain.handle('show-context-menu', (event, type: string) => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const menuMap = {
       download: [
         {
@@ -344,7 +344,7 @@ function handleCloseApp () {
     buttons: ['取消', '关闭']
   })
     .then(res => {
-      console.log(res);
+      console.log(res)
       if (count) store.set('taskList', taskList)
       if (res.response === 1) win.destroy()
     })

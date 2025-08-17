@@ -22,6 +22,8 @@ module.exports = {
     'no-prototype-builtins': 'off',
     'eol-last': 'off',
     'no-useless-escape': 'off',
-    'no-useless-constructor': 'off'
+    'no-useless-constructor': 'off',
+    'no-unused-vars': 'off',
+    'no-trailing-spaces': 'off'
   }
 }

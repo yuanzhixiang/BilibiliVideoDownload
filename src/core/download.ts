@@ -22,6 +22,14 @@ function handleDeleteFile (setting: SettingData, videoInfo: TaskData) {
 }
 
 export default async (videoInfo: TaskData, event: IpcMainEvent, setting: SettingData) => {
+  console.log('开始下载视频:', {
+    title: videoInfo.title,
+    quality: videoInfo.quality,
+    downloadUrl: {
+      video: videoInfo.downloadUrl.video ? '有视频地址' : '无视频地址',
+      audio: videoInfo.downloadUrl.audio ? '有音频地址' : '无音频地址'
+    }
+  })
   // throttle start
   let videoLastTime = 0
   let videoTimer: any = null
@@ -32,12 +40,18 @@ export default async (videoInfo: TaskData, event: IpcMainEvent, setting: Setting
     headers: {
       'User-Agent': `${UA}`,
       cookie: `SESSDATA=${setting.SESSDATA}`
+    },
+    https: {
+      rejectUnauthorized: false
     }
   }
   const downloadConfig = {
     headers: {
       'User-Agent': `${UA}`,
       referer: videoInfo.url
+    },
+    https: {
+      rejectUnauthorized: false
     }
   }
   // 去掉扩展名的文件路径
@@ -69,7 +83,21 @@ export default async (videoInfo: TaskData, event: IpcMainEvent, setting: Setting
   if (setting.isDanmaku) {
     event.reply('download-danmuku', videoInfo.cid, videoInfo.title, `${fileName}.ass`)
   }
+  // 检查下载地址
+  if (!videoInfo.downloadUrl.video || !videoInfo.downloadUrl.audio) {
+    const error = `下载地址缺失: 视频URL=${!!videoInfo.downloadUrl.video}, 音频URL=${!!videoInfo.downloadUrl.audio}`
+    console.error(error)
+    log.error(error)
+    event.reply('download-video-status', {
+      id: videoInfo.id,
+      status: 5,
+      progress: 100
+    })
+    return
+  }
+
   // 下载视频
+  console.log('开始下载视频流')
   await pipeline(
     got.stream(videoInfo.downloadUrl.video, downloadConfig)
       .on('downloadProgress', (progress: any) => {
@@ -93,7 +121,9 @@ export default async (videoInfo: TaskData, event: IpcMainEvent, setting: Setting
         }
       })
       .on('error', (error: any) => {
+        console.error('视频下载失败:', error)
         log.error(`视频下载失败：${videoInfo.title} ${error.message}`)
+        log.error(`视频URL: ${videoInfo.downloadUrl.video}`)
         event.reply('download-video-status', {
           id: videoInfo.id,
           status: 5,
@@ -104,6 +134,7 @@ export default async (videoInfo: TaskData, event: IpcMainEvent, setting: Setting
   )
   await sleep(500)
   // 下载音频
+  console.log('开始下载音频流')
   await pipeline(
     got.stream(videoInfo.downloadUrl.audio, downloadConfig)
       .on('downloadProgress', (progress: any) => {
@@ -127,7 +158,9 @@ export default async (videoInfo: TaskData, event: IpcMainEvent, setting: Setting
         }
       })
       .on('error', (error: any) => {
+        console.error('音频下载失败:', error)
         log.error(`音频下载失败：${videoInfo.title} ${error.message}`)
+        log.error(`音频URL: ${videoInfo.downloadUrl.audio}`)
         event.reply('download-video-status', {
           id: videoInfo.id,
           status: 5,
