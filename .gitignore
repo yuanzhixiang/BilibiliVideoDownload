@@ -31,3 +31,4 @@ pnpm-debug.log*
 /macos-latest.zip
 
 yarn.lock
+console.log

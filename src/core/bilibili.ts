@@ -597,6 +597,105 @@ const parseEPPageData = (epList: any[]): Page[] => {
   }))
 }
 
+// 获取番剧episode详细信息
+const getEpisodeInfo = async (epId: string) => {
+  try {
+    console.log('通过API获取episode信息:', epId)
+    const SESSDATA = store.settingStore(pinia).SESSDATA
+    console.log('API请求参数:', {
+      url: `https://api.bilibili.com/pgc/view/web/season?ep_id=${epId}`,
+      hasSESSDATA: !!SESSDATA
+    })
+    
+    const { body } = await window.electron.got(`https://api.bilibili.com/pgc/view/web/season?ep_id=${epId}`, {
+      headers: {
+        'User-Agent': `${UA}`,
+        cookie: `SESSDATA=${SESSDATA}`
+      },
+      responseType: 'json'
+    })
+    
+    console.log('API响应完整数据:', JSON.stringify(body, null, 2))
+    
+    if (body.code !== 0) {
+      console.error('API返回错误:', {
+        code: body.code,
+        message: body.message,
+        data: body.data
+      })
+      throw new Error(`API错误: ${body.message}`)
+    }
+    
+    console.log('API响应结构分析:', {
+      hasResult: !!body.result,
+      resultKeys: body.result ? Object.keys(body.result) : [],
+      hasEpisodes: !!(body.result?.episodes),
+      episodesCount: body.result?.episodes?.length || 0
+    })
+    
+    // 搜索主要episodes数组
+    const episodes = body.result?.episodes || []
+    console.log('主要episodes信息:', episodes.map((ep: any, index: number) => ({
+      index,
+      id: ep.id,
+      cid: ep.cid,
+      bvid: ep.bvid,
+      title: ep.title || ep.long_title,
+      hasRequiredFields: !!(ep.id && ep.cid && ep.bvid)
+    })))
+    
+    // 搜索所有section中的episodes
+    const sections = body.result?.section || []
+    console.log('sections数量:', sections.length)
+    
+    let allEpisodes = [...episodes]
+    sections.forEach((section: any, sectionIndex: number) => {
+      const sectionEpisodes = section.episodes || []
+      console.log(`Section ${sectionIndex} (${section.title}):`, sectionEpisodes.map((ep: any) => ({
+        id: ep.id || ep.ep_id,
+        cid: ep.cid,
+        bvid: ep.bvid,
+        title: ep.title || ep.long_title
+      })))
+      allEpisodes = allEpisodes.concat(sectionEpisodes)
+    })
+    
+    console.log('搜索目标EP ID:', epId)
+    console.log('所有可用的episode IDs:', allEpisodes.map(ep => (ep.id || ep.ep_id)?.toString()))
+    
+    // 在所有episodes中查找匹配的episode
+    const currentEp = allEpisodes.find((ep: any) => {
+      const episodeId = (ep.id || ep.ep_id)?.toString()
+      return episodeId === epId
+    })
+    
+    if (currentEp) {
+      console.log('找到匹配的episode:', {
+        id: currentEp.id,
+        cid: currentEp.cid,
+        bvid: currentEp.bvid,
+        title: currentEp.long_title || currentEp.title,
+        allFields: Object.keys(currentEp)
+      })
+      return currentEp
+    } else {
+      console.error('未找到匹配的episode:', {
+        searchingForId: epId,
+        availableIds: episodes.map((ep: any) => ep.id.toString())
+      })
+    }
+    
+    return null
+  } catch (error: any) {
+    console.error('获取episode信息失败:', {
+      error: error.message,
+      epId,
+      stack: error.stack
+    })
+    return null
+  }
+}
+
 // 从 __NEXT_DATA__ 解析EP数据
 const parseEPFromNextData = async (nextDataJson: string, url: string) => {
   try {
@@ -646,13 +745,21 @@ const parseEPFromNextData = async (nextDataJson: string, url: string) => {
     const epIdMatch = url.match(/ep(\d+)/)
     const epId = epIdMatch ? epIdMatch[1] : 'unknown'
     
+    // 通过API获取episode详细信息（包含cid）
+    console.log('尝试获取episode详细信息...')
+    const episodeInfo = await getEpisodeInfo(epId)
+    
+    if (!episodeInfo || !episodeInfo.cid) {
+      throw new Error(`无法获取番剧EP${epId}的详细信息，缺少必要的cid参数`)
+    }
+    
     const obj: VideoData = {
       id: '',
-      title: `EP${epId}`, // 临时标题，可能需要通过API获取完整信息
+      title: episodeInfo.long_title || episodeInfo.title || `EP${epId}`,
       url,
-      bvid: '', // 番剧可能没有bvid
-      cid: 0, // 需要通过其他方式获取
-      cover: '', // 需要通过其他方式获取
+      bvid: episodeInfo.bvid || '',
+      cid: episodeInfo.cid,
+      cover: episodeInfo.cover || '',
       createdTime: -1,
       quality: -1,
       view: 0,
@@ -662,11 +769,11 @@ const parseEPFromNextData = async (nextDataJson: string, url: string) => {
       up: [{ name: '哔哩哔哩', mid: 0 }], // 番剧的发布者
       qualityOptions: availableQualities.map((item: any) => ({ label: qualityMap[item], value: item })),
       page: [{
-        title: `EP${epId}`,
+        title: episodeInfo.long_title || episodeInfo.title || `EP${epId}`,
         page: 1,
         duration: formatSeconed(Math.floor(videoInfo.timelength / 1000)),
-        cid: 0, // 需要获取
-        bvid: '',
+        cid: episodeInfo.cid,
+        bvid: episodeInfo.bvid || '',
         url: url
       }],
       subtitle: [],
