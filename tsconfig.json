@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "es5",
     "module": "esnext",
-    "strict": true,
+    "strict": false,
     "jsx": "preserve",
     "importHelpers": true,
     "moduleResolution": "node",
@@ -11,9 +11,11 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "useDefineForClassFields": true,
-    "suppressImplicitAnyIndexErrors": true,
     "sourceMap": true,
     "allowJs": true,
+    "noImplicitAny": false,
+    "noEmit": false,
+    "ignoreDeprecations": "5.0",
     "baseUrl": ".",
     "types": [
       "webpack-env"

@@ -7,6 +7,8 @@ module.exports = {
       builderOptions: {
         productName: 'BilibiliVideoDownload',
         appId: 'com.blogwy.bilibilivideodownload',
+        buildDependenciesFromSource: false,
+        npmRebuild: false,
         dmg: {
           contents: [
             {
@@ -22,14 +24,17 @@ module.exports = {
             }
           ],
           sign: false,
-          icon: 'build/icons/icon.ico'
+          icon: 'build/icons/icon.ico',
+          format: 'ULFO'
         },
         mac: {
           icon: 'build/icons/icon.icns',
           identity: null,
-          target: {
-            target: 'dmg'
-          }
+          target: [
+            {
+              target: 'dir'
+            }
+          ]
         },
         nsis: {
           oneClick: false,
