@@ -29,3 +29,5 @@ pnpm-debug.log*
 /windows-latest.zip
 /ubuntu-latest.zip
 /macos-latest.zip
+
+yarn.lock

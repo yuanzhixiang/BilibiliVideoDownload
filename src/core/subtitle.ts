@@ -15,7 +15,10 @@ const getSubtitleData = async (url: string, path: string) => {
     headers: {
       'User-Agent': `${UA}`
     },
-    responseType: 'json'
+    responseType: 'json',
+    https: {
+      rejectUnauthorized: false
+    }
   })
   const str = handleSubtitleData(body)
   // 生成字幕文件

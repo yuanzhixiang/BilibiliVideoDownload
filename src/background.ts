@@ -84,7 +84,15 @@ ipcMain.on('open-dir', (event, list) => {
 // 发送http请求
 ipcMain.handle('got', (event, url, option) => {
   return new Promise((resolve, reject) => {
-    got(url, option)
+    // 添加SSL证书忽略配置，解决企业网络环境中的自签名证书问题
+    const httpsOptions = {
+      rejectUnauthorized: false
+    }
+    const finalOption = {
+      ...option,
+      https: httpsOptions
+    }
+    got(url, finalOption)
       .then((res: any) => {
         return resolve({ body: res.body, redirectUrls: res.redirectUrls, headers: res.headers })
       })
@@ -98,7 +106,15 @@ ipcMain.handle('got', (event, url, option) => {
 // 发送http请求，得到buffer
 ipcMain.handle('got-buffer', (event, url, option) => {
   return new Promise((resolve, reject) => {
-    got(url, option)
+    // 添加SSL证书忽略配置，解决企业网络环境中的自签名证书问题
+    const httpsOptions = {
+      rejectUnauthorized: false
+    }
+    const finalOption = {
+      ...option,
+      https: httpsOptions
+    }
+    got(url, finalOption)
       .buffer()
       .then((res: any) => {
         return resolve(res)
